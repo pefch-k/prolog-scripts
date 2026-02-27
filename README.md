@@ -1,2 +1,2 @@
 # prolog-scripts
-small prolog projects in every possible sector
+Small Prolog projects across various sectors

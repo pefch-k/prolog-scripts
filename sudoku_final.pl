@@ -25,7 +25,7 @@ sudoku(Rows) :-
 
     blocks(C, D).
 
-row([], []).% συνθηκη τερματισμου
+row([], []).
 row(Row, [H|T]) :-
     nth1(_, Row,H, Rest),
     row(Rest, T).
@@ -58,11 +58,10 @@ new_sudoku(N, [Row|Rows], [NewRow|NewRows]) :-
     new_row(N,Nn, Row, NewRow), 
     new_sudoku(Nn, Rows, NewRows). 
 
-`new_row(N,N, [], []).%ουσιαστικα εδω εχω 2 συνθηκες τερματισμου, οταν τα ν γινουν ιδια οταν η δευετρη λιστα γινει κενη(που γινεται πχ στο 3ο new row)
+new_row(N,N, [], []).
 new_row(N,Nn, [X|Xs], [X|Ys]) :-  new_row(N,Nn, Xs, Ys).
 
-new_row(N,Nn ,[_|Xs], [_|Ys]) :- %θα ηταν το ιδιο αν στο πρωτο _ εβαζα απλα Χ γτ ουσιαστικα εδω απλα δηλωνουμε οτι εκει που ειχα καποιο στοιχειο στη παλια λιστα τωρα βαζω τιποτα
+new_row(N,Nn ,[_|Xs], [_|Ys]) :- 
     N > 0, 
     N1 is N - 1, 
     new_row(N1,Nn, Xs, Ys).
-`

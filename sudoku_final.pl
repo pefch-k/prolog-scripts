@@ -11,20 +11,20 @@ sudoku(Rows) :-
     row([1,2,3,4], A),
     row([1,2,3,4], B),
 %column uniqueness between row A and B using element-wise inequality
-    maplist(neq,A,B),
+    maplist(\=,A,B),
 %2x2 block constraints for the top half of the grid
     blocks(A, B),
 
     row([1,2,3,4], C),
 %column uniqueness for row C against all previous rows
-    maplist(neq,A,C),
-    maplist(neq,B,C),
+    maplist(\=,A,C),
+    maplist(\=,B,C),
 
     row([1,2,3,4], D),
 %column uniqueness for row D against all previous rows
-    maplist(neq,A,D),
-    maplist(neq,B,D),
-    maplist(neq,C,D),
+    maplist(\=,A,D),
+    maplist(\=,B,D),
+    maplist(\=,C,D),
 
     blocks(C, D).
     

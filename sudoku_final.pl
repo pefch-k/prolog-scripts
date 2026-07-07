@@ -3,26 +3,28 @@
  * The grid is represented as a list of 4 rows: [A, B, C, D].
  * This predicate enforces row, column, and 2x2 block constraints dynamically.
  */
+neq(X, Y) :- X \= Y. %we create this in order to run the program in tau prolog
+
 sudoku(Rows) :-
 % Enforce domain and row uniqueness of A and B via permutations 
     Rows = [A, B, C, D],   
     row([1,2,3,4], A),
     row([1,2,3,4], B),
 %column uniqueness between row A and B using element-wise inequality
-    maplist(\=,A,B),
+    maplist(neq,A,B),
 %2x2 block constraints for the top half of the grid
     blocks(A, B),
 
     row([1,2,3,4], C),
 %column uniqueness for row C against all previous rows
-    maplist(\=,A,C),
-    maplist(\=,B,C),
+    maplist(neq,A,C),
+    maplist(neq,B,C),
 
     row([1,2,3,4], D),
 %column uniqueness for row D against all previous rows
-    maplist(\=,A,D),
-    maplist(\=,B,D),
-    maplist(\=,C,D),
+    maplist(neq,A,D),
+    maplist(neq,B,D),
+    maplist(neq,C,D),
 
     blocks(C, D).
     

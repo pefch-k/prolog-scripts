@@ -111,7 +111,8 @@
         .btn-generate:hover { background-color: #1976D2; }
         .btn-clear { background-color: #f44336; }
         .btn-clear:hover { background-color: #d32f2f; }
-
+        .btn-check { background-color: #FF9800; } 
+        .btn-check:hover { background-color: #F57C00; }
     </style>
 </head>
 <body>
@@ -166,6 +167,7 @@
 
             <div class="button-group">
                 <button id="generate-btn" class="btn-generate" onclick="nextPuzzle()" disabled>New game</button>
+                <button id="check-btn" class="btn-check" onclick="checkBoard()" disabled>Check</button>
                 <button id="solve-btn" onclick="solve()" disabled>solve</button>
                 <button id="clear-btn" class="btn-clear" onclick="resetBoard()" disabled>Clear</button>
             </div>
@@ -195,6 +197,7 @@
             
             document.getElementById('level-input').disabled = false;
             document.getElementById('generate-btn').disabled = false;
+            document.getElementById('check-btn').disabled = false;
             document.getElementById('solve-btn').disabled = false;
             document.getElementById('clear-btn').disabled = false;
         })
@@ -304,7 +307,7 @@
             try {
                 let answer = swipl_engine.prolog.query(queryStr).once();
                 
-                if (answer) {
+                if (answer.success) {
                     for (let r = 0; r < 4; r++) {
                         for (let c = 0; c < 4; c++) {
                             let cell = document.getElementById(`cell-${r}-${c}`);
@@ -328,7 +331,52 @@
                 console.error("Solver Error:", err);
             }
         }
+        function checkBoard() {
+            let statusEl = document.getElementById('status');
+            
+            let gridRows = [];
+            let hasEmptyCells = false;
 
+            // 1. Δημιουργία του πίνακα από τα δεδομένα του χρήστη
+            for (let r = 0; r < 4; r++) {
+                let row = [];
+                for (let c = 0; c < 4; c++) {
+                    let cell = document.getElementById(`cell-${r}-${c}`);
+                    let val = parseInt(cell.value, 10);
+                    
+                    if (!isNaN(val)) {
+                        row.push(val); // Βάζουμε το νούμερο που έγραψε ο παίκτης
+                    } else {
+                        row.push(`X_${r}_${c}`); // Βάζουμε μεταβλητή για το κενό
+                        hasEmptyCells = true;
+                    }
+                }
+                gridRows.push(`[${row.join(',')}]`);
+            }
+
+            // 2. Ερώτημα στην Prolog: "Υπάρχει λύση για αυτόν τον πίνακα;"
+            let queryStr = `sudoku([${gridRows.join(',')}]).`;
+
+            try {
+    let result = swipl_engine.prolog.query(queryStr).once();
+
+    if (result.success) {                 // ήταν: if (result)
+        if (hasEmptyCells) {
+            statusEl.innerText = "Keep going!";
+            statusEl.style.color = "blue";
+        } else {
+            statusEl.innerText = "Congratulations! You solved it perfectly!";
+            statusEl.style.color = "green";
+        }
+    } else {
+        statusEl.innerText = "There is a mistake!";
+        statusEl.style.color = "red";
+    }
+} catch (err) {
+    statusEl.innerText = "Error!";
+    console.error("Check Error:", err);
+}
+        }
         function resetBoard() {
             document.querySelectorAll('.cell').forEach(cell => {
                 cell.value = '';

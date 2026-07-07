@@ -196,10 +196,6 @@
 
     <script>
         let swipl_engine = null;
-
-        // Ζωντανό generator-query για το τρέχον level. Κρατώντας το ίδιο query object
-        // ανά level, κάθε "New game" συνεχίζει το backtracking απ' εκεί που έμεινε,
-        // αντί να ξαναδιατρέχει όλα τα προηγούμενα παζλ από την αρχή.
         let currentQuery = null;
         let currentLevelN = null;
 
@@ -254,8 +250,6 @@
             let n = getBlanksFromLevel(userLevel);
             let queryStr = `generator(${n}, [[C00, C01, C02, C03], [C10, C11, C12, C13], [C20, C21, C22, C23], [C30, C31, C32, C33]]).`;
 
-            // Αν άλλαξε το level (ή δεν υπάρχει ακόμα ζωντανό query), ξεκίνα καινούριο.
-            // Διαφορετικά συνεχίζουμε το ίδιο query ώστε να μη ξαναδουλεύουμε τα προηγούμενα παζλ.
             if (currentLevelN !== n || currentQuery === null) {
                 if (currentQuery) currentQuery.close();
                 currentLevelN = n;
@@ -271,7 +265,6 @@
                 try {
                     let ret = currentQuery.next();
 
-                    // Αν εξαντλήθηκαν οι λύσεις για αυτό το level, ξεκίνα την αναζήτηση απ' την αρχή
                     if (ret.done) {
                         currentQuery.close();
                         currentQuery = swipl_engine.prolog.query(queryStr);
@@ -297,7 +290,6 @@
                         statusEl.innerText = `Found a new puzzle (Level ${userLevel})!`;
                         statusEl.style.color = "green";
                     } else {
-                        // Δεν βρέθηκε κανένα παζλ με μοναδική λύση για αυτό το level
                         statusEl.innerText = "No puzzle found for this level!";
                         statusEl.style.color = "red";
                     }
@@ -366,7 +358,6 @@
             let gridRows = [];
             let hasEmptyCells = false;
 
-            // 1. Δημιουργία του πίνακα από τα δεδομένα του χρήστη
             for (let r = 0; r < 4; r++) {
                 let row = [];
                 for (let c = 0; c < 4; c++) {
@@ -383,12 +374,9 @@
                 gridRows.push(`[${row.join(',')}]`);
             }
 
-            // 2. Ερώτημα στην Prolog: "Υπάρχει λύση για αυτόν τον πίνακα;"
             let queryStr = `sudoku([${gridRows.join(',')}]).`;
 
             try {
-                // .once() επιστρέφει object και στις δύο περιπτώσεις (επιτυχία/αποτυχία),
-                // γι' αυτό ελέγχουμε ρητά το πεδίο success -- ένα plain "if(result)" θα ήταν πάντα true.
                 let result = swipl_engine.prolog.query(queryStr).once();
 
                 if (result.success) {

@@ -29,7 +29,7 @@ sudoku(Rows) :-
 %Generates the row permutation.
 row([], []).
 row(Row, [H|T]) :-
-    nth1(_, Row,H, Rest),
+    select(H, Row, Rest),
     row(Rest, T).
 
  %Succeeds if all elements in the given list are unique.
@@ -94,3 +94,4 @@ new_row(N,Nn ,[_|Xs], [_|Ys]) :-
     N > 0, 
     N1 is N - 1, 
     new_row(N1,Nn, Xs, Ys).
+ 

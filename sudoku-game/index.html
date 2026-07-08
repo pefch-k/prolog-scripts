@@ -237,69 +237,75 @@
             return level + 5;
         }
 
-        function nextPuzzle() {
-            let statusEl = document.getElementById('status');
-            let userLevel = parseInt(document.getElementById('level-input').value, 10);
+let puzzleIndex = 0;
 
-            if (userLevel < 1 || userLevel > 7 || isNaN(userLevel)) {
-                statusEl.innerText = "Enter a level from 1 to 7";
-                statusEl.style.color = "red";
-                return;
-            }
+function nextPuzzle() {
+    let statusEl = document.getElementById('status');
+    let userLevel = parseInt(document.getElementById('level-input').value, 10);
 
-            let n = getBlanksFromLevel(userLevel);
+    if (userLevel < 1 || userLevel > 7 || isNaN(userLevel)) {
+        statusEl.innerText = "Enter a level from 1 to 7";
+        statusEl.style.color = "red";
+        return;
+    }
+
+    let n = getBlanksFromLevel(userLevel);
+
+    if (currentLevelN !== n) {
+        currentLevelN = n;
+        puzzleIndex = 0;
+    }
+    puzzleIndex++;
+
+    statusEl.innerText = `Prolog is preparing Puzzle #${puzzleIndex}...`;
+    statusEl.style.color = "black";
+    resetBoard();
+
+    setTimeout(() => {
+        try {
             let queryStr = `generator(${n}, [[C00, C01, C02, C03], [C10, C11, C12, C13], [C20, C21, C22, C23], [C30, C31, C32, C33]]).`;
+            let query = swipl_engine.prolog.query(queryStr);
+            let ret = null;
 
-            if (currentLevelN !== n || currentQuery === null) {
-                if (currentQuery) currentQuery.close();
-                currentLevelN = n;
-                currentQuery = swipl_engine.prolog.query(queryStr);
+            for (let i = 0; i < puzzleIndex; i++) {
+                ret = query.next();
+                if (ret.done) {
+                    puzzleIndex = 1;
+                    query.close();
+                    query = swipl_engine.prolog.query(queryStr);
+                    ret = query.next();
+                    break;
+                }
             }
 
-            statusEl.innerText = "Prolog is preparing a new puzzle...";
-            statusEl.style.color = "black";
-
-            resetBoard();
-
-            setTimeout(() => {
-                try {
-                    let ret = currentQuery.next();
-
-                    if (ret.done) {
-                        currentQuery.close();
-                        currentQuery = swipl_engine.prolog.query(queryStr);
-                        ret = currentQuery.next();
-                    }
-
-                    if (ret && !ret.done) {
-                        let answer = ret.value;
-
-                        for (let r = 0; r < 4; r++) {
-                            for (let c = 0; c < 4; c++) {
-                                let cell = document.getElementById(`cell-${r}-${c}`);
-                                let varName = `C${r}${c}`;
-                                let val = answer[varName];
-
-                                if (typeof val === 'number') {
-                                    cell.value = val;
-                                    cell.classList.add('clue-cell');
-                                    cell.disabled = true;
-                                }
-                            }
+            if (ret && !ret.done) {
+                let answer = ret.value;
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        let cell = document.getElementById(`cell-${r}-${c}`);
+                        let val = answer[`C${r}${c}`];
+                        if (typeof val === 'number') {
+                            cell.value = val;
+                            cell.classList.add('clue-cell');
+                            cell.disabled = true;
                         }
-                        statusEl.innerText = `Found a new puzzle (Level ${userLevel})!`;
-                        statusEl.style.color = "green";
-                    } else {
-                        statusEl.innerText = "No puzzle found for this level!";
-                        statusEl.style.color = "red";
                     }
-
-                } catch (err) {
-                    statusEl.innerText = "An error occurred during generation!";
-                    console.error("Generator Error:", err);
                 }
-            }, 50);
+                statusEl.innerText = `Found Puzzle #${puzzleIndex} (Level ${userLevel})!`;
+                statusEl.style.color = "green";
+            } else {
+                statusEl.innerText = "No puzzle found for this level!";
+                statusEl.style.color = "red";
+            }
+
+            query.close(); // <-- ΚΛΕΙΝΕΙ πάντα το query πριν αφήσει τον χρήστη να πατήσει Check/solve
+
+        } catch (err) {
+            statusEl.innerText = "An error occurred during generation!";
+            console.error("Generator Error:", err);
         }
+    }, 50);
+}
 
         function solve() {
             let statusEl = document.getElementById('status');

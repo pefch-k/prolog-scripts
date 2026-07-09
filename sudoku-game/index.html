@@ -78,20 +78,18 @@
         .clue-cell { background-color: #e0e0e0; color: #333; font-weight: bold; cursor: not-allowed; }
         .solved-cell { color: #007BFF; font-weight: bold; background-color: #eaf4ff; cursor: not-allowed; }
 
-        /* The Guide: With position absolute, it is taken out of the normal flow and does not affect centering */
         .legend-sidebar {
             position: absolute;
-            left: calc(100% + 20px); /* Placed immediately to the right of the grid with a 20px gap */
-            top: 50%;                /* Goes to the middle of the height */
-            transform: translateY(-50%); /* Corrects centering based on its own height */
+            left: calc(100% + 20px); 
+            top: 50%;                
+            transform: translateY(-50%); 
             background-color: transparent;
             border: none;
             padding: 0;
             text-align: left;
-            width: max-content;      /* Takes exactly as much width as it needs */
+            width: max-content;      
         }
 
-        /* Smaller letters and spacing to be more compact */
         .legend-sidebar h3 {
             margin-top: 0;
             font-size: 14px;
@@ -198,6 +196,7 @@
         let swipl_engine = null;
         let currentQuery = null;
         let currentLevelN = null;
+        let puzzleIndex = 0;
 
         SWIPL({ arguments: ["-q"] }).then((module) => {
             swipl_engine = module;
@@ -237,8 +236,6 @@
             return level + 5;
         }
 
-let puzzleIndex = 0;
-
 function nextPuzzle() {
     let statusEl = document.getElementById('status');
     let userLevel = parseInt(document.getElementById('level-input').value, 10);
@@ -250,35 +247,46 @@ function nextPuzzle() {
     }
 
     let n = getBlanksFromLevel(userLevel);
+    let queryStr = `generator(${n}, [[C00, C01, C02, C03], [C10, C11, C12, C13], [C20, C21, C22, C23], [C30, C31, C32, C33]]).`;
 
     if (currentLevelN !== n) {
+        if (currentQuery) currentQuery.close();
+        currentQuery = null;
         currentLevelN = n;
         puzzleIndex = 0;
     }
-    puzzleIndex++;
 
-    statusEl.innerText = `Prolog is preparing Puzzle #${puzzleIndex}...`;
+    statusEl.innerText = `Prolog is preparing Puzzle...`;
     statusEl.style.color = "black";
     resetBoard();
 
     setTimeout(() => {
         try {
-            let queryStr = `generator(${n}, [[C00, C01, C02, C03], [C10, C11, C12, C13], [C20, C21, C22, C23], [C30, C31, C32, C33]]).`;
-            let query = swipl_engine.prolog.query(queryStr);
-            let ret = null;
-
-            for (let i = 0; i < puzzleIndex; i++) {
-                ret = query.next();
-                if (ret.done) {
-                    puzzleIndex = 1;
-                    query.close();
-                    query = swipl_engine.prolog.query(queryStr);
-                    ret = query.next();
-                    break;
+            if (currentQuery === null) {
+                currentQuery = swipl_engine.prolog.query(queryStr);
+                for (let i = 0; i < puzzleIndex; i++) {
+                    let skip = currentQuery.next();
+                    if (skip.done) {
+                        currentQuery.close();
+                        currentQuery = swipl_engine.prolog.query(queryStr);
+                        puzzleIndex = 0;
+                        break;
+                    }
                 }
+            }
+            let ret = currentQuery.next();
+            let totalSeen = null;
+
+            if (ret.done) {
+                totalSeen = puzzleIndex;
+                currentQuery.close();
+                currentQuery = swipl_engine.prolog.query(queryStr);
+                puzzleIndex = 0;
+                ret = currentQuery.next();
             }
 
             if (ret && !ret.done) {
+                puzzleIndex++;
                 let answer = ret.value;
                 for (let r = 0; r < 4; r++) {
                     for (let c = 0; c < 4; c++) {
@@ -291,14 +299,18 @@ function nextPuzzle() {
                         }
                     }
                 }
+                if (totalSeen !== null) {
+                    statusEl.innerText = `No new puzzles left — you've seen all ${totalSeen} for this level! Starting over: Puzzle #1 (Level ${userLevel}).`;
+                    statusEl.style.color = "blue";
+                } else {
                 statusEl.innerText = `Found Puzzle #${puzzleIndex} (Level ${userLevel})!`;
                 statusEl.style.color = "green";
+                }
             } else {
                 statusEl.innerText = "No puzzle found for this level!";
                 statusEl.style.color = "red";
             }
 
-            query.close(); // <-- ΚΛΕΙΝΕΙ πάντα το query πριν αφήσει τον χρήστη να πατήσει Check/solve
 
         } catch (err) {
             statusEl.innerText = "An error occurred during generation!";
@@ -308,6 +320,10 @@ function nextPuzzle() {
 }
 
         function solve() {
+            if (currentQuery) {
+                currentQuery.close();
+                currentQuery = null;
+            }
             let statusEl = document.getElementById('status');
             statusEl.innerText = "Calculating solution...";
             statusEl.style.color = "black";
@@ -359,8 +375,11 @@ function nextPuzzle() {
         }
 
         function checkBoard() {
+            if (currentQuery) {
+                 currentQuery.close();
+                 currentQuery = null;
+            }
             let statusEl = document.getElementById('status');
-
             let gridRows = [];
             let hasEmptyCells = false;
 
@@ -371,9 +390,9 @@ function nextPuzzle() {
                     let val = parseInt(cell.value, 10);
 
                     if (!isNaN(val)) {
-                        row.push(val); // Βάζουμε το νούμερο που έγραψε ο παίκτης
+                        row.push(val); 
                     } else {
-                        row.push(`X_${r}_${c}`); // Βάζουμε μεταβλητή για το κενό
+                        row.push(`X_${r}_${c}`); 
                         hasEmptyCells = true;
                     }
                 }
